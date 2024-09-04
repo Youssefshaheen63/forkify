@@ -604,6 +604,8 @@ const controlRecipes = async function() {
         const id = window.location.hash.slice(1);
         if (!id) return;
         (0, _recipeViewJsDefault.default).renderSppiner();
+        // Update results view to mark selected search result
+        (0, _resultsViewJsDefault.default).update(_modelJs.getSearchResultsPage());
         // Loading recipe
         await _modelJs.loadRecipe(id);
         // Rendering recipe
@@ -635,7 +637,8 @@ const controlServings = function(newServings) {
     // Update the recipe servings (in state)
     _modelJs.updateServings(newServings);
     // Update the recipe view
-    (0, _recipeViewJsDefault.default).render(_modelJs.state.recipe);
+    // recipeView.render(model.state.recipe);
+    (0, _recipeViewJsDefault.default).update(_modelJs.state.recipe);
 };
 const init = function() {
     (0, _recipeViewJsDefault.default).addHandlerRender(controlRecipes);
@@ -3038,6 +3041,20 @@ class View {
         this._clear();
         this._ParentEl.insertAdjacentHTML("afterbegin", markup);
     }
+    update(data) {
+        this._data = data;
+        const newMarkup = this._generateMarkup();
+        const newDom = document.createRange().createContextualFragment(newMarkup);
+        const newElement = Array.from(newDom.querySelectorAll("*"));
+        const curElement = Array.from(this._ParentEl.querySelectorAll("*"));
+        newElement.forEach((newEl, i)=>{
+            const curEl = curElement[i];
+            // Update changed TEXT
+            if (!newEl.isEqualNode(curEl) && newEl.firstChild?.nodeValue.trim() !== "") curEl.textContent = newEl.textContent;
+            // Update changed ATTRIBUTES
+            if (!newEl.isEqualNode(curEl)) Array.from(newEl.attributes).forEach((attr)=>curEl.setAttribute(attr.name, attr.value));
+        });
+    }
     _clear() {
         this._ParentEl.innerHTML = "";
     }
@@ -3121,10 +3138,11 @@ class ResultsView extends (0, _viewDefault.default) {
     _message = "";
     _data;
     _generateMarkup() {
+        const id = window.location.hash.slice(1);
         return this._data.map((data)=>{
             return `
            <li class="preview">
-            <a class="preview__link " href="#${data.id}">
+            <a class="preview__link ${data.id === id ? "preview__link--active" : ""}" href="#${data.id}">
             <figure class="preview__fig">
                 <img src="${data.image}" alt="${data.title}" />
             </figure>
